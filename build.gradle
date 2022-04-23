@@ -1,17 +1,19 @@
-plugins {
-    id 'groovy'
-    id 'java'
-}
+apply plugin: 'groovy'
+apply plugin: 'java'
 
 group 'org.example'
-version '1.0-SNAPSHOT'
+version '1.0'
+
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
+    //implementation 'org.codehaus.groovy:groovy-all:3.0.5'
+    implementation "org.codehaus.groovy:groovy-all:3.0.5"
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 
@@ -20,6 +22,12 @@ dependencies {
 
     //Synthea
     implementation group: 'org.mitre.synthea', name: 'synthea', version: '3.0.0'
+
+    //Jackson
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.3'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.3'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.13.2'
+
 }
 
 test {

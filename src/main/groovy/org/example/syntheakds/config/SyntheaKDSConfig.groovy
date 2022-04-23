@@ -6,5 +6,6 @@ class SyntheaKDSConfig {
 
     static int patientCount = 100
     static Path tmpOutputDir = Path.of('src', 'main', 'resources', 'tmp_output')
+    static Path patDir = tmpOutputDir.resolve('fhir')
 
 }
