@@ -4,15 +4,15 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.core.LoggerContext
 import org.example.syntheakds.config.SyntheaKDSConfig
-import org.example.syntheakds.read.DataProvider
+import org.example.syntheakds.processing.ProcessingTask
+import org.example.syntheakds.processing.Processor
+import org.example.syntheakds.utils.Utils
 import org.mitre.synthea.engine.Generator
 import org.mitre.synthea.engine.Generator.GeneratorOptions
 import org.mitre.synthea.helpers.Config
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadPoolExecutor
 
 class Main {
 
@@ -24,15 +24,19 @@ class Main {
 
         logger.info("[#]Starting application ...")
 
+        createDirs()
+
         logger.info("[#]Running Synthea ...")
         def options = configureGeneratorOptions()
         def generator = new Generator(options)
         generator.run()
         logger.info("[#]Finished running Synthea.")
 
-        logger.info("[#]starting conversion ...")
-        def ioPool = Executors.newFixedThreadPool(50)
-        def provider = new DataProvider(SyntheaKDSConfig.patDir, 100, 10000, ioPool as ThreadPoolExecutor)
+        logger.info("[#]Starting conversion ...")
+        def paths = Utils.findFilesInDir(SyntheaKDSConfig.tmpDirPath, Utils.FileExtension.JSON)
+        def  task = new ProcessingTask()
+        def processor = new Processor<Path>(paths, task)
+        logger.info("[#]Finished conversion.")
 
     }
 
@@ -44,7 +48,7 @@ class Main {
         Config.set("exporter.fhir_stu3.export", "false")
         Config.set("exporter.fhir_dstu2.export", "false")
         Config.set("exporter.subfolders_by_id_substring", "false")
-        Config.set("exporter.baseDirectory", SyntheaKDSConfig.tmpOutputDir.toString())
+        Config.set("exporter.baseDirectory", SyntheaKDSConfig.tmpDirPath.toFile().getAbsolutePath())
         Config.set("generate.database_type", "none")
         return options
     }
@@ -53,10 +57,24 @@ class Main {
      * Method for setting Log4j2 config file location. Should work in jar as well
      */
     private static void configureLog4j2(){
-        def configFilePath = Paths.get('config', 'log4j2.xml').toString()
-        def configFileUrl = Thread.currentThread().getContextClassLoader().getResource(configFilePath)
+        def configFilePath = Paths.get('config', 'log4j2.xml')
         def context = LogManager.getContext(false) as LoggerContext
-        context.setConfigLocation(configFileUrl.toURI())
+        context.setConfigLocation(Utils.findResourceURI(configFilePath))
+    }
+
+    private static void createDirs(){
+        logger.debug("Creating output directories ...")
+        def outputDir = SyntheaKDSConfig.outputDirPath.toFile()
+        if(!outputDir.exists()) outputDir.mkdirs()
+        def tmpDir = SyntheaKDSConfig.tmpDirPath.toFile()
+        tmpDir.mkdirs()
+        def kdsDir = SyntheaKDSConfig.kdsDirPath.toFile()
+        kdsDir.mkdirs()
+        logger.debug("Created output directories.")
+    }
+
+    private static void clearOutputFolder(){
+
     }
 
 }

@@ -28,6 +28,11 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.3'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.13.2'
 
+    //HAPI FHIR
+    implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.core:5.6.42'
+    implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.utilities:5.6.42'
+    implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.r4:5.6.42'
+
 }
 
 test {
