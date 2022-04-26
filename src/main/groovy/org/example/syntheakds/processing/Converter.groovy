@@ -10,6 +10,7 @@ import org.hl7.fhir.r4.model.Enumerations
 import org.hl7.fhir.r4.model.HumanName
 import org.hl7.fhir.r4.model.Identifier
 import org.hl7.fhir.r4.model.MedicationRequest
+import org.hl7.fhir.r4.model.Narrative
 import org.hl7.fhir.r4.model.Observation
 import org.hl7.fhir.r4.model.Patient
 import org.hl7.fhir.r4.model.Resource
@@ -43,12 +44,13 @@ class Converter {
 
             //Id and Identifier
             def id = patientNode.get("id").asText()
+            def identifier = patientNode.get("identifier").get(1)
             it.setId(id)
             def idType = new CodeableConcept().addCoding(
                     new Coding("http://terminology.hl7.org/CodeSystem/v2-0203", "MR", "Medical Record Number")
             )
             it.addIdentifier(new Identifier().setUse(Identifier.IdentifierUse.OFFICIAL).setType(idType)
-                    .setSystem(""/*TODO*/).setValue(id))
+                    .setSystem(identifier.get("system").asText()).setValue(identifier.get("value").asText()))
 
             //Name
             it.addName().tap {name ->
@@ -69,6 +71,11 @@ class Converter {
                 default:
                     it.setGender(Enumerations.AdministrativeGender.UNKNOWN)
             }
+
+            //Birth Date: YYYY-MM-DD
+            def date = patientNode.get("birthDate").asText().split("-").collect {s ->Integer.parseInt(s)}
+            //See https://docs.oracle.com/javase/8/docs/api/java/util/Date.html#Date-int-int-int-
+            it.setBirthDate(new Date(date[0] - 1900, date[1] - 1, date[2]))
 
 
         }
