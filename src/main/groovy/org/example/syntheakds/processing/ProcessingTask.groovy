@@ -17,5 +17,6 @@ class ProcessingTask implements Consumer<Path> {
         def content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8)
         def bundleRoot = objectMapper.readTree(content)
 
+
     }
 }

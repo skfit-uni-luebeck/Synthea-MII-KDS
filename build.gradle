@@ -32,6 +32,8 @@ dependencies {
     implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.core:5.6.42'
     implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.utilities:5.6.42'
     implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.r4:5.6.42'
+    implementation group: 'ca.uhn.hapi.fhir', name: 'hapi-fhir-base', version: '5.7.2'
+
 
 }
 
