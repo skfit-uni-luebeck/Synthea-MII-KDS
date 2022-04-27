@@ -3,6 +3,8 @@ package org.example.syntheakds.processing
 import com.fasterxml.jackson.databind.JsonNode
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import org.hl7.fhir.r4.model.Address
+import org.hl7.fhir.r4.model.BooleanType
 import org.hl7.fhir.r4.model.CodeableConcept
 import org.hl7.fhir.r4.model.Coding
 import org.hl7.fhir.r4.model.Condition
@@ -77,15 +79,40 @@ class Converter {
             //See https://docs.oracle.com/javase/8/docs/api/java/util/Date.html#Date-int-int-int-
             it.setBirthDate(new Date(date[0] - 1900, date[1] - 1, date[2]))
 
+            //Address
+            def address = patientNode.get("address").get(0)
+            it.addAddress().setUse(Address.AddressUse.HOME).setType(Address.AddressType.BOTH)
+                    .setLine(address.get("line").collect(line -> new StringType(line.asText())))
+                    .setCity(address.get("city").asText()).setPostalCode(address.get("postalCode").asText())
+                    .setCountry(address.get("country").asText())
 
+            //Marital Status
+            def maritalStatus = patientNode.get("maritalStatus").get("coding").get(0)
+            it.setMaritalStatus(new CodeableConcept(new Coding(
+                    maritalStatus.get("system").asText(),
+                    maritalStatus.get("code").asText(),
+                    maritalStatus.get("display").asText()
+            )))
+
+            //Multiple Birth
+            it.setMultipleBirth(new BooleanType(patientNode.get("multipleBirth").asBoolean(false)))
+
+            //Communication
+            def language = patientNode.get("communication").get(0).get("language").get("coding").get(0)
+            it.addCommunication().setLanguage(new CodeableConcept(new Coding(
+                    language.get("system").asText(),
+                    language.get("code").asText(),
+                    language.get("display").asText()
+            )))
         }
     }
 
     static Condition convertCondition(JsonNode conditionNode){
+
         return null
     }
 
-    static Observation convertObservation(JsonNode observatioNode){
+    static Observation convertObservation(JsonNode observationNode){
         return null
     }
 
