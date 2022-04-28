@@ -3,6 +3,7 @@ package org.example.syntheakds.processing
 import com.fasterxml.jackson.databind.JsonNode
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import org.example.syntheakds.utils.Utils
 import org.hl7.fhir.r4.model.Address
 import org.hl7.fhir.r4.model.BooleanType
 import org.hl7.fhir.r4.model.CodeableConcept
@@ -15,6 +16,7 @@ import org.hl7.fhir.r4.model.MedicationRequest
 import org.hl7.fhir.r4.model.Narrative
 import org.hl7.fhir.r4.model.Observation
 import org.hl7.fhir.r4.model.Patient
+import org.hl7.fhir.r4.model.Reference
 import org.hl7.fhir.r4.model.Resource
 import org.hl7.fhir.r4.model.StringType
 import org.hl7.fhir.r4.model.codesystems.AdministrativeGender
@@ -108,8 +110,62 @@ class Converter {
     }
 
     static Condition convertCondition(JsonNode conditionNode){
+        return new Condition().tap {it ->
+            //Profile
+            it.getMeta().addProfile("https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose")
 
-        return null
+            //Id
+            it.setId(conditionNode.get("id").asText())
+
+            //Clinical Status
+            def clinicalStatus = conditionNode.get("clinicalStatus").get("coding")
+            it.setClinicalStatus(new CodeableConcept().tap {cc ->
+                clinicalStatus.each {cs -> cc.addCoding(
+                        new Coding()
+                        .setSystem(cs.get("system").asText())
+                        .setCode(cs.get("code").asText())
+                )}
+            })
+
+            //Verification Status
+            def verificationStatus = conditionNode.get("verificationStatus").get("coding")
+            it.setVerificationStatus(new CodeableConcept().tap {cc ->
+                verificationStatus.each {cs -> cc.addCoding(
+                        new Coding()
+                        .setSystem(cs.get("system").asText())
+                        .setCode(cs.get("code").asText())
+                )}
+            })
+
+            //Category
+            def category = conditionNode.get("category").get("coding").each {c ->
+                it.addCategory().addCoding(
+                        new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())
+                )
+            }
+
+            //Code
+            def code = conditionNode.get("code").get("coding")
+            it.setCode(new CodeableConcept().tap {cc ->
+                code.each {c -> new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())}
+            })
+
+            //Subject
+            def subjectRef = conditionNode.get("subject").get("reference").asText()
+            it.setSubject(new Reference(subjectRef))
+
+            //Encounter
+            def encounterRef = conditionNode.get("encounter").get("reference").asText()
+            it.setEncounter(new Reference(encounterRef))
+
+            //Date Times
+            def onset = conditionNode.get("onsetDateTime").asText()
+            def abatement = conditionNode.get("abatementDateTime").asText()
+            def recorded = conditionNode.get("recordedDate").asText()
+            it.setOnset(new StringType(onset))
+            it.setAbatement(new StringType(abatement))
+            it.setRecordedDate(Utils.dateFromSyntheaDate(recorded))
+        }
     }
 
     static Observation convertObservation(JsonNode observationNode){

@@ -7,12 +7,15 @@ import org.apache.logging.log4j.core.appender.rolling.FileExtension
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 class Utils {
 
     private static final Logger logger = LogManager.getLogger(Utils.class)
 
     private static final ClassLoader cLoader = Thread.currentThread().getContextClassLoader()
+    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
 
     static InputStream findResource(Path path){
         def stringPath = path.toString()
@@ -42,6 +45,21 @@ class Utils {
                 logger.debug("Found ${fileExt.toString().toUpperCase()} file: '${file.path}'")
         }
         return fileList
+    }
+
+    /**
+     * Method for converting dates in Synthea resources to Date instances
+     * @param date String representing a date and time with offset
+     * @return Date instance representing the date and time of the input string or null if the input is null
+     */
+    static Date dateFromSyntheaDate(String date){
+        if(date == null){
+            return null
+        }
+        else{
+            OffsetDateTime syntheaDateTime = OffsetDateTime.parse(date, formatter)
+            return Date.from(syntheaDateTime.toInstant())
+        }
     }
 
     enum FileExtension{
