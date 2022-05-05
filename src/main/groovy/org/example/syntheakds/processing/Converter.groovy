@@ -3,17 +3,23 @@ package org.example.syntheakds.processing
 import com.fasterxml.jackson.databind.JsonNode
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import org.example.syntheakds.processing.rxnorm.RxNormTranslator
 import org.example.syntheakds.utils.Utils
 import org.hl7.fhir.r4.model.Address
 import org.hl7.fhir.r4.model.BooleanType
 import org.hl7.fhir.r4.model.CodeableConcept
 import org.hl7.fhir.r4.model.Coding
 import org.hl7.fhir.r4.model.Condition
+import org.hl7.fhir.r4.model.DateTimeType
+import org.hl7.fhir.r4.model.DateType
+import org.hl7.fhir.r4.model.DiagnosticReport
 import org.hl7.fhir.r4.model.Encounter
 import org.hl7.fhir.r4.model.Enumerations
 import org.hl7.fhir.r4.model.HumanName
 import org.hl7.fhir.r4.model.Identifier
+import org.hl7.fhir.r4.model.IntegerType
 import org.hl7.fhir.r4.model.Location
+import org.hl7.fhir.r4.model.MedicationAdministration
 import org.hl7.fhir.r4.model.MedicationRequest
 import org.hl7.fhir.r4.model.Narrative
 import org.hl7.fhir.r4.model.Observation
@@ -31,6 +37,8 @@ class Converter {
 
     private static final Logger logger = LogManager.getLogger(Converter.class)
 
+    private static final RxNormTranslator translator = new RxNormTranslator()
+
     static Resource convert(JsonNode resourceNode){
         switch(resourceNode.get("resourceType").asText()){
             case "Patient":
@@ -38,11 +46,19 @@ class Converter {
             case "Condition":
                 return convertCondition(resourceNode)
             case "Observation":
-                return  convertObservation(resourceNode)
+                return convertObservation(resourceNode)
+            case "Procedure":
+                return convertProcedure(resourceNode)
             case "MedicationRequest":
                 return convertMedicationRequest(resourceNode)
+            case "Encounter":
+                return convertEncounter(resourceNode)
+            case "DiagnosticReport":
+                return convertDiagnosticReport(resourceNode)
+            case "MedicationAdministration":
+                return convertMedicationAdministration(resourceNode)
             default:
-                logger.warn("[!]No handling available for resource of type ${resourceNode.get("resourceType")}")
+                logger.debug("[!]No handling available for resource of type ${resourceNode.get("resourceType")}")
                 return null
         }
     }
@@ -91,7 +107,7 @@ class Converter {
             def address = patientNode.get("address").get(0)
             it.addAddress().setUse(Address.AddressUse.HOME).setType(Address.AddressType.BOTH)
                     .setLine(address.get("line").collect(line -> new StringType(line.asText())))
-                    .setCity(address.get("city").asText()).setPostalCode(address.get("postalCode").asText())
+                    .setCity(address.get("city").asText()).setPostalCode("")
                     .setCountry(address.get("country").asText())
 
             //Marital Status
@@ -103,7 +119,12 @@ class Converter {
             )))
 
             //Multiple Birth
-            it.setMultipleBirth(new BooleanType(patientNode.get("multipleBirth").asBoolean(false)))
+            if(patientNode.has("multipleBirthBoolean")){
+                it.setMultipleBirth(new BooleanType(patientNode.get("multipleBirthBoolean").asBoolean(false)))
+            }
+            if(patientNode.has("multipleBirthInteger")){
+                it.setMultipleBirth(new IntegerType(patientNode.get("multipleBirthInteger").asInt(0)))
+            }
 
             //Communication
             def language = patientNode.get("communication").get(0).get("language").get("coding").get(0)
@@ -134,7 +155,7 @@ class Converter {
             })
 
             //Verification Status
-            def verificationStatus = conditionNode.get("verificationStatus").get(0).get("coding")
+            def verificationStatus = conditionNode.get("verificationStatus").get("coding")
             it.setVerificationStatus(new CodeableConcept().tap {cc ->
                 verificationStatus.each {cs -> cc.addCoding(
                         new Coding()
@@ -166,7 +187,7 @@ class Converter {
 
             //Date Times
             def onset = conditionNode.get("onsetDateTime").asText()
-            def abatement = conditionNode.get("abatementDateTime").asText()
+            def abatement = conditionNode.get("abatementDateTime")?.asText()
             def recorded = conditionNode.get("recordedDate").asText()
             it.setOnset(new StringType(onset))
             it.setAbatement(new StringType(abatement))
@@ -205,7 +226,7 @@ class Converter {
 
             //Effective
             def effective = observationNode.get("effectiveDateTime").asText()
-            it.setEffective(new StringType(effective))
+            it.setEffective(new DateTimeType(Utils.dateFromSyntheaDate(effective)))
 
             //Issued
             def issued = observationNode.get("issued").asText()
@@ -236,8 +257,13 @@ class Converter {
             handleSurveyComponent(components, it)
 
             switch (category.get(0).get("code").asText()){
-                case "survey": //Survey and vital sign observations seem to fall into the capabilities of this profile
+                /*Survey, vital sign, exam and social history observations seem to fall into the capabilities of this
+                * profile*/
+                case "survey":
                 case "vital-signs":
+                case "exam":
+                case "social-history":
+                case "therapy":
                     //Profile
                     it.getMeta().addProfile("https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Vitalstatus")
 
@@ -245,6 +271,8 @@ class Converter {
                     it.setStatus(Observation.ObservationStatus.FINAL)
                     break
                 case "laboratory":
+                case "procedure":
+                case "imaging":
                     //Profile
                     it.getMeta().addProfile("https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab")
 
@@ -253,7 +281,8 @@ class Converter {
                     it.setStatus(Observation.ObservationStatus.fromCode(status))
                     break
                 default:
-                    logger.warn("[!]Observation resource couldn't be matched to fitting category: code: ${category.get("code").asText()}")
+                    logger.warn("[!]Observation resource couldn't be matched to fitting category: code: ${category.get(0).get("code").asText()}")
+                    logger.warn(observationNode.toPrettyString())
             }
         }
     }
@@ -347,10 +376,18 @@ class Converter {
             it.setIntent(MedicationRequest.MedicationRequestIntent.fromCode(intent))
 
             //Medication
-            def medication = medicationNode.get("medicationCodeableConcept").get("coding")
-            it.setMedication(new CodeableConcept().setCoding(medication.collect(c ->
-                    new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())
-            )))
+            def medication = medicationNode.get("medicationCodeableConcept")?.get("coding")
+            if(medication){
+                it.setMedication(new CodeableConcept().setCoding(medication.collect(c ->
+                        new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())
+                )))
+            }
+            def medicationReference = medicationNode.get("medicationReference")
+            if(medicationReference){
+                it.setMedication(
+                        new Reference().setReference(medicationReference.get("reference").asText())
+                )
+            }
 
             //Subject
             def subjectRef = medicationNode.get("subject").get("reference").asText()
@@ -368,7 +405,7 @@ class Converter {
             def requester = medicationNode.get("requester")
             it.setRequester(
                     new Reference()
-                    .setReference(requester.get("request").asText())
+                    .setReference(requester.get("reference").asText())
                     .setDisplay(requester.get("display").asText())
             )
         }
@@ -401,9 +438,9 @@ class Converter {
 
             //Type
             def type = encounterNode.get("type").get(0).get("coding")
-            it.addType(new CodeableConcept().setCoding(type.collect(c ->
-                    new Coding(type.get("system").asText(), type.get("code").asText(), type.get("display").asText())
-            )))
+            it.addType(new CodeableConcept().setCoding(type.collect(c -> {
+                return new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display")?.asText())
+            })))
 
             //Subject
             def subjectRef = encounterNode.get("subject")
@@ -467,6 +504,132 @@ class Converter {
                     .setDisplay(serviceProvider.get("display").asText())
             )
         }
+    }
+
+    static DiagnosticReport convertDiagnosticReport(JsonNode diagRepNode){
+        //Only Laboratory Diagnostic Reports will be converted
+        def category = diagRepNode.get("category").get(0).get("coding")
+        def isLabReport = false
+        category.find {c ->
+            if(c.get("code").asText() == "LAB"){
+                isLabReport = true
+                return true
+            }
+            return false
+        }
+        if(isLabReport) return new DiagnosticReport().tap {it ->
+            //Profile
+            it.getMeta().addProfile("https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/DiagnosticReportLab")
+
+            //Id
+            it.setId(diagRepNode.get("id").asText())
+
+            //Status
+            it.setStatus(DiagnosticReport.DiagnosticReportStatus.fromCode(diagRepNode.get("status").asText()))
+
+            //Category
+            it.addCategory(new CodeableConcept().setCoding(category.collect(c ->
+                    new Coding()
+                    .setSystem(c.get("system").asText())
+                    .setCode(c.get("code").asText())
+                    .setDisplay(c.get("display").asText())
+            )))
+
+            //Code
+            def code = diagRepNode.get("code").get("coding")
+            it.setCode(new CodeableConcept().setCoding(code.collect(c ->
+                    new Coding()
+                    .setSystem(c.get("system").asText())
+                    .setCode(c.get("code").asText())
+                    .setDisplay(c.get("display").asText())
+            )))
+
+            //Subject
+            def subjectRef = diagRepNode.get("subject").get("reference").asText()
+            it.setSubject(new Reference(subjectRef))
+
+            //Encounter
+            def encounterRef = diagRepNode.get("encounter").get("reference").asText()
+            it.setEncounter(new Reference(encounterRef))
+
+            //Effective
+            def effective = diagRepNode.get("effectiveDateTime").asText()
+            it.setEffective(new DateTimeType(Utils.dateFromSyntheaDate(effective)))
+
+            //Issued
+            def issued = diagRepNode.get("issued").asText()
+            it.setIssued(Utils.dateFromSyntheaDate(issued))
+
+            //Performer
+            def performer = diagRepNode.get("performer")
+            it.setPerformer(performer.collect(r ->
+                    new Reference()
+                    .setReference(r.get("reference").asText())
+                    .setDisplay(r.get("display").asText())
+            ))
+
+            //Result
+            def result = diagRepNode.get("result")
+            it.setResult(result.collect(r ->
+                    new Reference()
+                            .setReference(r.get("reference").asText())
+                            .setDisplay(r.get("display").asText())
+            ))
+        }
+        return null
+    }
+
+    static MedicationAdministration convertMedicationAdministration(JsonNode medAdmNode){
+        def medCodes = medAdmNode.get("medicationCodeableConcept").get("coding")
+        def medicationCodes = new CodeableConcept()
+        def matchingCodes = false
+        medCodes.each {c ->
+            def atcCodes = translator.translate(c.get("code").asText())
+            if(atcCodes.size() > 0){
+                matchingCodes = true
+                atcCodes.each {atcCode ->
+                    medicationCodes.addCoding(
+                            new Coding()
+                            .setSystem("http://www.whocc.no/atc")
+                            .setCode(atcCode)
+                    )
+                }
+            }
+        }
+
+        if(matchingCodes) return new MedicationAdministration().tap {it ->
+            //Id
+            it.setId(medAdmNode.get("id").asText())
+
+            //Profile
+            it.getMeta().addProfile("https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration")
+
+            //Status
+            it.setStatus(MedicationAdministration.MedicationAdministrationStatus.fromCode(medAdmNode.get("status").asText()))
+
+            //Code
+            it.setMedication(medicationCodes)
+
+            //Subject
+            def subjectRef = medAdmNode.get("subject").get("reference").asText()
+            it.setSubject(new Reference(subjectRef))
+
+            //Context
+            def context = medAdmNode.get("context").get("reference").asText()
+            it.setContext(new Reference(context))
+
+            //Effective
+            def effective = medAdmNode.get("effectiveDateTime").asText()
+            it.setEffective(new DateTimeType(Utils.dateFromSyntheaDate(effective)))
+
+            //Reason
+            def reasonRef = medAdmNode.get("reasonReference")
+            it.setReasonReference(reasonRef.collect(r ->
+                new Reference(r.get("reference").asText())
+            ))
+        }
+
+        return null
     }
 
 }

@@ -28,13 +28,15 @@ class Processor<T> {
     void run(){
         logger.info("[#]Running processor ...")
         this.items.each {item ->
-            this.pool.execute(() -> task(item))
+            this.pool.execute(() -> task.accept(item))
         }
 
         this.pool.shutdown()
 
         try {
+            def thread = Thread.start {new ProgressTask().accept(this.pool.queue)}
             this.pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS)
+            thread.join()
         }
         catch (InterruptedException exc){
             logger.error("[!]Processor was interrupted while waiting for tasks to finish:\n${exc.getMessage()}")

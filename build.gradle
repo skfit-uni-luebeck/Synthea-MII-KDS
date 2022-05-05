@@ -1,14 +1,35 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '5.0.0'
+}
+
 apply plugin: 'groovy'
 apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+apply plugin: 'checkstyle'
+apply plugin: 'jacoco'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 group 'org.example'
 version '1.0'
 
-sourceCompatibility = '11'
-targetCompatibility = '11'
+compileJava {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+}
+
+mainClassName = 'org.example.syntheakds.Main'
 
 repositories {
     mavenCentral()
+}
+
+shadowJar {
+    archiveBaseName.set('syntheakds')
+    zip64 true
+
+    exclude 'App.class'
 }
 
 dependencies {

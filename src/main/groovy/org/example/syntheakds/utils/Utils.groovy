@@ -9,6 +9,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 class Utils {
 
@@ -16,12 +17,13 @@ class Utils {
 
     private static final ClassLoader cLoader = Thread.currentThread().getContextClassLoader()
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
+    private static DateTimeFormatter formatterMicro = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 
     static InputStream findResource(Path path){
         def stringPath = path.toString()
         logger.debug("[?]Searching for resource @ ${stringPath} ...")
         def stream = cLoader.getResourceAsStream(stringPath)
-        if(stream) logger.warn("[!]Could not find resource @ ${stringPath}!")
+        if(!stream) logger.warn("[!]Could not find resource @ ${stringPath}!")
         return stream
     }
 
@@ -29,7 +31,7 @@ class Utils {
         def stringPath = path.toString()
         logger.debug("[?]Searching for resource @ ${stringPath} ...")
         def url = cLoader.getResource(stringPath)
-        if(url) logger.warn("[!]Could not find resource @ ${stringPath}!")
+        if(!url) logger.warn("[!]Could not find resource @ ${stringPath}!")
         return url
     }
 
@@ -47,6 +49,15 @@ class Utils {
         return fileList
     }
 
+    static void writeFile(String content, Path outputPath, String fileName){
+        def newFile = outputPath.resolve(fileName).toFile()
+        newFile << content
+    }
+
+    static Path getJarDir(){
+        return new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toPath()
+    }
+
     /**
      * Method for converting dates in Synthea resources to Date instances
      * @param date String representing a date and time with offset
@@ -57,7 +68,13 @@ class Utils {
             return null
         }
         else{
-            OffsetDateTime syntheaDateTime = OffsetDateTime.parse(date, formatter)
+            OffsetDateTime syntheaDateTime = null
+            try{
+                syntheaDateTime = OffsetDateTime.parse(date, formatter)
+            }
+            catch (DateTimeParseException ignored){
+                syntheaDateTime = OffsetDateTime.parse(date, formatterMicro)
+            }
             return Date.from(syntheaDateTime.toInstant())
         }
     }

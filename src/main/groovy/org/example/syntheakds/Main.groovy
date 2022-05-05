@@ -20,6 +20,8 @@ class Main {
 
     static void main(String[] args){
 
+        SyntheaKDSConfig.patientCount = Integer.parseInt(args[0])
+
         configureLog4j2()
 
         logger.info("[#]Starting application ...")
@@ -33,10 +35,14 @@ class Main {
         logger.info("[#]Finished running Synthea.")
 
         logger.info("[#]Starting conversion ...")
-        def paths = Utils.findFilesInDir(SyntheaKDSConfig.tmpDirPath, Utils.FileExtension.JSON)
+        def start = System.currentTimeSeconds()
+        def paths = Utils.findFilesInDir(SyntheaKDSConfig.patDirPath, Utils.FileExtension.JSON)
         def  task = new ProcessingTask()
         def processor = new Processor<Path>(paths, task)
-        logger.info("[#]Finished conversion.")
+        processor.run()
+        def end = System.currentTimeSeconds()
+        def timeSpan = end - start
+        logger.info("[#]Finished conversion in ${Math.floor(timeSpan/60) as int}m ${timeSpan%60}s.")
 
     }
 
@@ -50,6 +56,8 @@ class Main {
         Config.set("exporter.subfolders_by_id_substring", "false")
         Config.set("exporter.baseDirectory", SyntheaKDSConfig.tmpDirPath.toFile().getAbsolutePath())
         Config.set("generate.database_type", "none")
+        Config.set("generate.only_dead_patients", "false")
+        Config.set("generate.only_alive_patients", "false")
         return options
     }
 
