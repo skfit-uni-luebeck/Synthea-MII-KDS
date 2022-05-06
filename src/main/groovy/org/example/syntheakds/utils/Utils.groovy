@@ -30,7 +30,7 @@ class Utils {
     static URL findResourceURL(Path path){
         def stringPath = path.toString()
         logger.debug("[?]Searching for resource @ ${stringPath} ...")
-        def url = cLoader.getResource(stringPath)
+        def url = cLoader.getResource(stringPath.replaceAll("\\\\", "/"))
         if(!url) logger.warn("[!]Could not find resource @ ${stringPath}!")
         return url
     }

@@ -38,16 +38,17 @@ class RxNormTranslator {
     private static HashMap<String, List<String>> loadCache(){
         def root
         def file = mapPath.toFile()
+        def map = new HashMap<String, List<String>>()
         if(file != null && file.exists()){
             root = objectMapper.readTree(file)
         }
         else{
-            def stream = Utils.findResource(Path.of("rxnorm", "mapping_atc.json"))
-            root = objectMapper.readTree(stream)
+            def stream = Utils.findResource(Paths.get("rxnorm", "mapping_atc.json"))
+            //Failsafe for resource reading in JARs
+            if (stream != null) root = objectMapper.readTree(stream)
+            else return map
             file.toPath().getParent().toFile().mkdirs()
         }
-
-        def map = new HashMap<String, List<String>>()
 
         root.get("codes").each {codeNode ->
             map[codeNode.get("rxnorm").asText()] = codeNode.get("atc").collect(c -> c.asText())

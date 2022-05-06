@@ -12,7 +12,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 group 'org.example'
-version '1.0'
+//version '1.0'
 
 compileJava {
     sourceCompatibility = '11'
