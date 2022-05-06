@@ -26,3 +26,4 @@ hs_err_pid*
 /output/
 *.hprof
 /java_pid16284.hprof.brxb6u.b.ij/
+/build/

@@ -25,13 +25,6 @@ repositories {
     mavenCentral()
 }
 
-shadowJar {
-    archiveBaseName.set('syntheakds')
-    zip64 true
-
-    exclude 'App.class'
-}
-
 dependencies {
     //implementation 'org.codehaus.groovy:groovy-all:3.0.5'
     implementation "org.codehaus.groovy:groovy-all:3.0.5"
@@ -56,6 +49,13 @@ dependencies {
     implementation group: 'ca.uhn.hapi.fhir', name: 'hapi-fhir-base', version: '5.7.2'
 
 
+}
+
+shadowJar {
+    archiveBaseName.set('syntheakds')
+    zip64 true
+
+    exclude 'App.class'
 }
 
 test {
