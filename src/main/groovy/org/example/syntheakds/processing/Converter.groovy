@@ -360,7 +360,23 @@ class Converter {
     }
 
     static MedicationRequest convertMedicationRequest(JsonNode medicationNode){
-        return new MedicationRequest().tap {it ->
+        def medCodes = medicationNode.get("medicationCodeableConcept")?.get("coding")
+        def medicationCodes = new CodeableConcept()
+        def matchingCodes = false
+        medCodes.each {c ->
+            def atcCodes = translator.translate(c.get("code").asText())
+            if(atcCodes.size() > 0){
+                matchingCodes = true
+                atcCodes.each {atcCode ->
+                    medicationCodes.addCoding(
+                            new Coding()
+                                    .setSystem("http://www.whocc.no/atc")
+                                    .setCode(atcCode)
+                    )
+                }
+            }
+        }
+        if (matchingCodes) return new MedicationRequest().tap {it ->
             //Profile
             it.getMeta().addProfile("https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationRequest")
 
@@ -376,12 +392,15 @@ class Converter {
             it.setIntent(MedicationRequest.MedicationRequestIntent.fromCode(intent))
 
             //Medication
+            it.setMedication(medicationCodes)
+            /*
             def medication = medicationNode.get("medicationCodeableConcept")?.get("coding")
             if(medication){
                 it.setMedication(new CodeableConcept().setCoding(medication.collect(c ->
                         new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())
                 )))
             }
+             */
             def medicationReference = medicationNode.get("medicationReference")
             if(medicationReference){
                 it.setMedication(
@@ -409,6 +428,8 @@ class Converter {
                     .setDisplay(requester.get("display").asText())
             )
         }
+
+        return null
     }
 
     static Encounter convertEncounter(JsonNode encounterNode){

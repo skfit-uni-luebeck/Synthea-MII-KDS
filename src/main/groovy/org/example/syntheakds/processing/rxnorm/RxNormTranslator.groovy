@@ -40,9 +40,11 @@ class RxNormTranslator {
         def file = mapPath.toFile()
         def map = new HashMap<String, List<String>>()
         if(file != null && file.exists()){
+            logger.debug("[+]ATC mapping file four rxNorm codes found.")
             root = objectMapper.readTree(file)
         }
         else{
+            logger.info("[+]No ATC mapping file for rxNorm codes could be found. Using fallback.")
             def stream = Utils.findResource(Paths.get("rxnorm", "mapping_atc.json"))
             //Failsafe for resource reading in JARs
             if (stream != null) root = objectMapper.readTree(stream)
@@ -56,6 +58,7 @@ class RxNormTranslator {
 
         //Ensure newly looked up codes are added by writing them into the cache file
         Runtime.getRuntime().addShutdownHook({
+            logger.debug("[+]Writing mapping file.")
             def listNode = objectMapper.createArrayNode()
             def cacheRoot = objectMapper.createObjectNode().set("codes", listNode)
             cachedAnswers.entrySet().each {entry ->
