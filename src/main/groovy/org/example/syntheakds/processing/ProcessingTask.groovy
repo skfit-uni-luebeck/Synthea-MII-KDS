@@ -2,6 +2,7 @@ package org.example.syntheakds.processing
 
 import ca.uhn.fhir.parser.IParser
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.apache.commons.io.FileUtils
 import org.example.syntheakds.config.SyntheaKDSConfig
 import org.example.syntheakds.utils.Utils
 
