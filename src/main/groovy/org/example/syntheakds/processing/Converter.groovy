@@ -174,7 +174,9 @@ class Converter {
             //Code
             def code = conditionNode.get("code").get("coding")
             it.setCode(new CodeableConcept().tap {cc ->
-                code.each {c -> new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())}
+                code.each {c -> cc.addCoding(
+                        new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())
+                )}
             })
 
             //Subject
@@ -203,9 +205,9 @@ class Converter {
             //Category
             def category = observationNode.get("category").get(0).get("coding")
             it.addCategory(new CodeableConcept().tap {cc ->
-                category.each {c ->
+                category.each {c -> cc.addCoding(
                     new Coding(c.get("system").asText(), c.get("code").asText(), c.get("display").asText())
-                }
+                )}
             })
 
             //Code
