@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.core.appender.rolling.FileExtension
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.OffsetDateTime
@@ -51,6 +52,7 @@ class Utils {
 
     static void writeFile(String content, Path outputPath, String fileName){
         def newFile = outputPath.resolve(fileName).toFile()
+        newFile.getParentFile().mkdirs()
         newFile << content
     }
 

@@ -5,8 +5,8 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.core.LoggerContext
 import org.example.syntheakds.config.SyntheaKDSConfig
-import org.example.syntheakds.processing.ProcessingTask
 import org.example.syntheakds.processing.Processor
+import org.example.syntheakds.processing.openehr.OpenEHRProcessingTask
 import org.example.syntheakds.utils.Utils
 import org.mitre.synthea.engine.Generator
 import org.mitre.synthea.engine.Generator.GeneratorOptions
@@ -21,7 +21,8 @@ class Main {
 
     static void main(String[] args){
 
-        SyntheaKDSConfig.patientCount = Integer.parseInt(args[0])
+        //TODO: Revert
+        SyntheaKDSConfig.patientCount = 10 //Integer.parseInt(args[0])
 
         configureLog4j2()
 
@@ -38,7 +39,8 @@ class Main {
         logger.info("[#]Starting conversion ...")
         def start = System.currentTimeSeconds()
         def paths = Utils.findFilesInDir(SyntheaKDSConfig.patDirPath, Utils.FileExtension.JSON)
-        def  task = new ProcessingTask()
+        //TODO: FHIR/OpenEHR Task
+        def  task = new OpenEHRProcessingTask()
         def processor = new Processor<Path>(paths, task)
         processor.run()
         def end = System.currentTimeSeconds()
@@ -79,8 +81,10 @@ class Main {
         if(!outputDir.exists()) outputDir.mkdirs()
         def tmpDir = SyntheaKDSConfig.tmpDirPath.toFile()
         tmpDir.mkdirs()
-        def kdsDir = SyntheaKDSConfig.kdsDirPath.toFile()
-        kdsDir.mkdirs()
+        def fhirKdsDir = SyntheaKDSConfig.fhirKdsDirPath.toFile()
+        fhirKdsDir.mkdirs()
+        def openEhrKdsDir = SyntheaKDSConfig.openEHRKdsDirPath.toFile()
+        openEhrKdsDir.mkdirs()
         logger.debug("Created output directories.")
     }
 

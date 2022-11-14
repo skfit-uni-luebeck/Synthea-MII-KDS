@@ -1,8 +1,7 @@
-package org.example.syntheakds.processing
+package org.example.syntheakds.processing.fhir
 
 import ca.uhn.fhir.parser.IParser
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.commons.io.FileUtils
 import org.example.syntheakds.config.SyntheaKDSConfig
 import org.example.syntheakds.utils.Utils
 
@@ -11,7 +10,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.function.Consumer
 
-class ProcessingTask implements Consumer<Path> {
+class FhirProcessingTask implements Consumer<Path> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
     private static final IParser parser = SyntheaKDSConfig.ctx.newJsonParser().setPrettyPrint(true)
@@ -26,12 +25,12 @@ class ProcessingTask implements Consumer<Path> {
         def instances = []
         bundleEntry.each {entry ->
             def resource = entry.get("resource")
-            instances << Converter.convert(resource)
+            instances << FhirConverter.convert(resource)
         }
 
         //Create and write bundle
         def bundle = FhirUtils.createBundle(instances)
         def json = parser.encodeResourceToString(bundle)
-        Utils.writeFile(json, SyntheaKDSConfig.kdsDirPath, path.getFileName().toString())
+        Utils.writeFile(json, SyntheaKDSConfig.fhirKdsDirPath, path.getFileName().toString())
     }
 }

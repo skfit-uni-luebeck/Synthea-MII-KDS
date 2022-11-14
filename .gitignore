@@ -28,3 +28,4 @@ hs_err_pid*
 *.hprof
 /java_pid16284.hprof.brxb6u.b.ij/
 /build/
+/.gradle/

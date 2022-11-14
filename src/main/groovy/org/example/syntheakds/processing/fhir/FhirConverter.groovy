@@ -1,4 +1,4 @@
-package org.example.syntheakds.processing
+package org.example.syntheakds.processing.fhir
 
 import com.fasterxml.jackson.databind.JsonNode
 import org.apache.logging.log4j.LogManager
@@ -11,17 +11,14 @@ import org.hl7.fhir.r4.model.CodeableConcept
 import org.hl7.fhir.r4.model.Coding
 import org.hl7.fhir.r4.model.Condition
 import org.hl7.fhir.r4.model.DateTimeType
-import org.hl7.fhir.r4.model.DateType
 import org.hl7.fhir.r4.model.DiagnosticReport
 import org.hl7.fhir.r4.model.Encounter
 import org.hl7.fhir.r4.model.Enumerations
 import org.hl7.fhir.r4.model.HumanName
 import org.hl7.fhir.r4.model.Identifier
 import org.hl7.fhir.r4.model.IntegerType
-import org.hl7.fhir.r4.model.Location
 import org.hl7.fhir.r4.model.MedicationAdministration
 import org.hl7.fhir.r4.model.MedicationRequest
-import org.hl7.fhir.r4.model.Narrative
 import org.hl7.fhir.r4.model.Observation
 import org.hl7.fhir.r4.model.Patient
 import org.hl7.fhir.r4.model.Period
@@ -30,12 +27,10 @@ import org.hl7.fhir.r4.model.Quantity
 import org.hl7.fhir.r4.model.Reference
 import org.hl7.fhir.r4.model.Resource
 import org.hl7.fhir.r4.model.StringType
-import org.hl7.fhir.r4.model.codesystems.AdministrativeGender
-import org.hl7.fhir.r4.model.codesystems.ObservationStatus
 
-class Converter {
+class FhirConverter {
 
-    private static final Logger logger = LogManager.getLogger(Converter.class)
+    private static final Logger logger = LogManager.getLogger(FhirConverter.class)
 
     private static final RxNormTranslator translator = new RxNormTranslator()
 

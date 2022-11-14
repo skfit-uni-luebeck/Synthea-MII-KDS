@@ -14,7 +14,8 @@ class SyntheaKDSConfig {
     static final Path outputDirPath = basePath.resolve(Paths.get("output", System.currentTimeMillis().toString()))
     static final Path tmpDirPath = outputDirPath.resolve('tmp_output')
     static final Path patDirPath = tmpDirPath.resolve('fhir')
-    static final Path kdsDirPath = outputDirPath.resolve('kds')
+    static final Path fhirKdsDirPath = outputDirPath.resolve('fhir-kds')
+    static final Path openEHRKdsDirPath = outputDirPath.resolve('openehr-kds')
     static final FhirContext ctx = FhirContext.forR4()
 
     //Adjustable values

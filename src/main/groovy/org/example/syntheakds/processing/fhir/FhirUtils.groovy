@@ -1,4 +1,4 @@
-package org.example.syntheakds.processing
+package org.example.syntheakds.processing.fhir
 
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
