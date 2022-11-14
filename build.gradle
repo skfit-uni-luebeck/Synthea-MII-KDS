@@ -23,6 +23,7 @@ mainClassName = 'org.example.syntheakds.Main'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -48,6 +49,9 @@ dependencies {
     implementation 'ca.uhn.hapi.fhir:org.hl7.fhir.r4:5.6.42'
     implementation group: 'ca.uhn.hapi.fhir', name: 'hapi-fhir-base', version: '5.7.2'
 
+    // OpenEHR SDK
+    implementation 'com.github.ehrbase.openEHR_SDK:client:v1.22.0'
+    //
 
 }
 
